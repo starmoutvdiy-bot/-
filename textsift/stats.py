@@ -42,18 +42,24 @@ def compute_stats(lines: list[str], *, top_n: int = 10) -> TextStats:
     )
 
 
-# TODO (straightforward): Implement `format_stats(stats: TextStats) -> str` that
-# returns a human-readable multi-line string summary of a TextStats object.
-# Example output:
-#
-#   Lines  :     142
-#   Words  :   1,203
-#   Chars  :   7,840
-#   Unique :     318
-#   Top words: the(45), and(30), is(18), ...
-#
-# Use str.format or an f-string with number formatting (comma separators for
-# counts). Return the string; do not print it. Add tests in test_stats.py.
+def format_stats(stats: TextStats) -> str:
+    """Return a human-readable summary of a TextStats object.
+
+    Args:
+        stats: A populated TextStats instance.
+
+    Returns:
+        A multi-line formatted string with right-aligned, comma-separated counts
+        and a top-words list in the form word(count), ...
+    """
+    top = ", ".join(f"{word}({count:,})" for word, count in stats.top_words)
+    return (
+        f"Lines  : {stats.line_count:>9,}\n"
+        f"Words  : {stats.word_count:>9,}\n"
+        f"Chars  : {stats.char_count:>9,}\n"
+        f"Unique : {stats.unique_words:>9,}\n"
+        f"Top words: {top}"
+    )
 
 
 # TODO (medium): Add a `compute_readability(lines)` function that returns a
