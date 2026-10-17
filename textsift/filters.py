@@ -54,10 +54,29 @@ def deduplicate_lines(lines: list[str], *, preserve_order: bool = True) -> list[
     return list(set(lines))
 
 
-# TODO (medium): Add a `slice_lines(lines, start, end)` function that supports
-# Python-style negative indexing and step values, mirroring the semantics of
-# list slicing. Should raise ValueError for invalid step=0. Add corresponding
-# tests in tests/test_filters.py.
+def slice_lines(
+    lines: list[str],
+    start: int | None = None,
+    end: int | None = None,
+    step: int | None = None,
+) -> list[str]:
+    """Return a slice of lines using Python list-slicing semantics.
+
+    Args:
+        lines: Input lines.
+        start: Start index (negative values count from the end).
+        end: End index, exclusive (negative values count from the end).
+        step: Step between lines (negative values reverse the order).
+
+    Returns:
+        The sliced list of lines.
+
+    Raises:
+        ValueError: If step is 0.
+    """
+    if step == 0:
+        raise ValueError("step must not be zero")
+    return lines[start:end:step]
 
 
 # TODO (hard): Add a `transform_lines(lines, transformations)` function where
