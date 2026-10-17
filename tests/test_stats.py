@@ -1,6 +1,14 @@
 """Tests for textsift.stats."""
 
-from textsift.stats import TextStats, compute_stats, format_stats
+import pytest
+
+from textsift.stats import (
+    TextStats,
+    compute_readability,
+    compute_stats,
+    count_syllables,
+    format_stats,
+)
 
 
 class TestComputeStats:
@@ -61,3 +69,36 @@ class TestFormatStats:
         stats = TextStats(top_words=[])
         output = format_stats(stats)
         assert "Top words" in output  # label still present even if empty
+
+
+class TestCountSyllables:
+    @pytest.mark.parametrize(
+        "word, expected",
+        [("cat", 1), ("hello", 2), ("make", 1), ("table", 2), ("the", 1), ("beautiful", 3)],
+    )
+    def test_known_words(self, word, expected):
+        assert count_syllables(word) == expected
+
+    def test_minimum_one(self):
+        assert count_syllables("rhythm") >= 1
+
+
+class TestComputeReadability:
+    def test_empty_input(self):
+        assert compute_readability([]) == 0.0
+
+    def test_formula(self):
+        # 4 words, 1 sentence, 4 syllables:
+        # 206.835 - 1.015 * 4 - 84.6 * 1
+        score = compute_readability(["The cat sat down."])
+        assert score == pytest.approx(206.835 - 1.015 * 4 - 84.6)
+
+    def test_simple_text_scores_higher_than_complex(self):
+        simple = compute_readability(["The cat sat. The dog ran."])
+        complex_ = compute_readability(
+            ["Considerable organizational complexity necessitates comprehensive evaluation."]
+        )
+        assert simple > complex_
+
+    def test_text_without_punctuation_counts_one_sentence(self):
+        assert compute_readability(["the cat sat down"]) == compute_readability(["The cat sat down."])

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 
@@ -62,7 +63,49 @@ def format_stats(stats: TextStats) -> str:
     )
 
 
-# TODO (medium): Add a `compute_readability(lines)` function that returns a
-# Flesch-Kincaid reading ease score. Requires counting syllables per word
-# (a heuristic approach using vowel groups is acceptable). Add a brief
-# docstring citing the formula.
+_VOWEL_GROUP = re.compile(r"[aeiouy]+")
+_SENTENCE_END = re.compile(r"[.!?]+")
+_WORD = re.compile(r"[A-Za-z]+(?:'[A-Za-z]+)?")
+
+
+def count_syllables(word: str) -> int:
+    """Estimate the number of syllables in a word using vowel groups.
+
+    Each run of consecutive vowels counts as one syllable. A trailing silent
+    "e" is not counted (except in "-le" endings such as "table"). Every word
+    has at least one syllable.
+    """
+    word = word.lower()
+    count = len(_VOWEL_GROUP.findall(word))
+    if word.endswith("e") and not word.endswith("le") and count > 1:
+        count -= 1
+    return max(count, 1)
+
+
+def compute_readability(lines: list[str]) -> float:
+    """Return the Flesch reading ease score for a body of text.
+
+    Uses the Flesch (1948) formula:
+
+        206.835 - 1.015 * (words / sentences) - 84.6 * (syllables / words)
+
+    Higher scores mean easier text (roughly 0-100 for typical prose).
+    Syllables are estimated heuristically, so the score is approximate.
+
+    Args:
+        lines: Input lines of text.
+
+    Returns:
+        The reading ease score, or 0.0 if the text contains no words.
+    """
+    text = " ".join(lines)
+    words = _WORD.findall(text)
+    if not words:
+        return 0.0
+    sentences = max(len(_SENTENCE_END.findall(text)), 1)
+    syllables = sum(count_syllables(word) for word in words)
+    return (
+        206.835
+        - 1.015 * (len(words) / sentences)
+        - 84.6 * (syllables / len(words))
+    )
