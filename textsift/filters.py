@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 
 
 def filter_lines(
@@ -79,7 +80,30 @@ def slice_lines(
     return lines[start:end:step]
 
 
-# TODO (hard): Add a `transform_lines(lines, transformations)` function where
-# `transformations` is a list of callables applied in sequence to each line.
-# Should support short-circuit: if a transformation returns None, skip that
-# line entirely. This would allow composable pipelines (strip, upper, filter).
+def transform_lines(
+    lines: list[str],
+    transformations: list[Callable[[str], str | None]],
+) -> list[str]:
+    """Apply a sequence of transformations to each line.
+
+    Each transformation receives the output of the previous one. If any
+    transformation returns None, the line is dropped and the remaining
+    transformations are skipped for it.
+
+    Args:
+        lines: Input lines.
+        transformations: Callables applied in order to each line.
+
+    Returns:
+        The transformed lines, excluding any that were dropped.
+    """
+    result = []
+    for line in lines:
+        current: str | None = line
+        for transform in transformations:
+            current = transform(current)
+            if current is None:
+                break
+        if current is not None:
+            result.append(current)
+    return result
