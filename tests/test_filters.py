@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from textsift.filters import deduplicate_lines, filter_lines, slice_lines
+from textsift.filters import deduplicate_lines, filter_lines, slice_lines, transform_lines
 
 
 class TestFilterLines:
@@ -68,3 +68,29 @@ class TestSliceLines:
 
     def test_out_of_range_is_empty(self):
         assert slice_lines(self.lines, 10, 20) == []
+
+
+class TestTransformLines:
+    def test_applies_in_order(self):
+        result = transform_lines(["  hi  "], [str.strip, str.upper, lambda s: s + "!"])
+        assert result == ["HI!"]
+
+    def test_no_transformations_returns_input(self):
+        assert transform_lines(["a", "b"], []) == ["a", "b"]
+
+    def test_none_drops_line(self):
+        drop_empty = lambda s: s or None
+        assert transform_lines(["a", "  ", "b"], [str.strip, drop_empty]) == ["a", "b"]
+
+    def test_short_circuits_after_none(self):
+        calls = []
+
+        def record(s):
+            calls.append(s)
+            return s
+
+        transform_lines(["skip", "keep"], [lambda s: None if s == "skip" else s, record])
+        assert calls == ["keep"]
+
+    def test_empty_input(self):
+        assert transform_lines([], [str.upper]) == []
